@@ -1,29 +1,36 @@
-from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
+from sentence_transformers import SentenceTransformer
+import faiss
+import numpy as np
 
-# Initialize embeddings
-embedding = HuggingFaceEmbeddings()
+# Load model
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Bot personas
 personas = {
-    "bot_a": "AI and crypto will solve everything. Love Elon Musk, space.",
-    "bot_b": "Tech is destroying society. Hate AI, love privacy.",
-    "bot_c": "Markets, trading, ROI, finance mindset."
+    "bot_a": "AI and crypto will solve all human problems. Optimistic about Elon Musk and tech.",
+    "bot_b": "Tech monopolies are destroying society. Critical of AI and billionaires.",
+    "bot_c": "Focus on markets, trading, ROI, finance."
 }
 
-# Create vector DB
+# Create embeddings
 texts = list(personas.values())
-metadatas = [{"id": k} for k in personas.keys()]
+embeddings = model.encode(texts)
 
-db = FAISS.from_texts(texts, embedding, metadatas=metadatas)
+# FAISS index
+dimension = embeddings.shape[1]
+index = faiss.IndexFlatL2(dimension)
+index.add(np.array(embeddings))
 
-def route_post_to_bots(post_content, threshold=0.5):
-    results = db.similarity_search_with_score(post_content, k=3)
+
+def route_post_to_bots(post_content, threshold=0.7):
+    post_embedding = model.encode([post_content])
+    D, I = index.search(np.array(post_embedding), k=3)
 
     matched = []
-    for doc, score in results:
-        similarity = 1 - score
+    for dist, idx in zip(D[0], I[0]):
+        similarity = 1 / (1 + dist)  # convert distance → similarity
         if similarity > threshold:
-            matched.append(doc.metadata["id"])
+            bot_id = list(personas.keys())[idx]
+            matched.append(bot_id)
 
     return matched

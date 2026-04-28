@@ -1,0 +1,9 @@
+$ python main.py
+
+Matched Bots: ['bot_a']
+
+Generated Post:
+AI and crypto will solve everything. Innovation driven by leaders like Elon Musk will reshape the future.
+
+Defense Reply:
+This argument is flawed. AI believer perspective highlights long-term technological impact beyond short-term skepticism.
